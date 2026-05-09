@@ -21,7 +21,6 @@
 .search-section {
     position: relative;
     top: 0;
-    z-index: 100;
 }
 
 .search-bar {
@@ -415,7 +414,6 @@
 .mobile-search-section {
     position: relative;
     top: 0;
-    z-index: 100;
 }
 
 .mobile-search-trigger {

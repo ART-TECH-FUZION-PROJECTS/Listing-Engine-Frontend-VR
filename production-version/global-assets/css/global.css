@@ -73,7 +73,6 @@
 *:focus-visible,
 *:active {
     outline: none !important;
-    box-shadow: none !important;
 }
 
 /* Reset WordPress default paragraph margin and set base typography color */

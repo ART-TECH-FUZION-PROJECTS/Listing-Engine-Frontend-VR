@@ -28,9 +28,29 @@ window.SearchBar = (function($) {
 
     function init() {
         $(document).on('click', handleOutsideClick);
+        $(document).on('click', '.lef-trigger-search', handleTriggerClick);
         renderCalendar();
         updateGuestButtons();
         updateGuestDisplay();
+    }
+
+    function handleTriggerClick(e) {
+        e.preventDefault();
+        e.stopPropagation(); // Prevent immediate closing from handleOutsideClick
+        
+        if ($(window).width() <= 765) {
+            openMobileModal();
+        } else {
+            const $bar = $('#lefSearchBar');
+            if ($bar.length) {
+                // Scroll smoothly to the search bar
+                $('html, body').animate({
+                    scrollTop: $bar.offset().top - 100
+                }, 300);
+                // Open the location section after scrolling
+                setTimeout(() => openSection('location'), 350);
+            }
+        }
     }
 
     function requestGeolocation(callback) {

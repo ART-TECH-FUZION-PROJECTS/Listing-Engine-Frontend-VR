@@ -283,6 +283,15 @@ $display_name = $current_user->display_name ?: $current_user->user_login;
                             </svg>
                             On submit, the search bar redirects the user to the Listing View page with the selected filters pre-applied.
                         </div>
+
+                        <div class="lef-dash-doc-note" style="margin-top: 15px; border-left-color: var(--leb-primary-color); background: var(--leb-bg-light);">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="16" x2="12" y2="12"></line>
+                                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                            </svg>
+                            <strong>Trigger Link:</strong> You can add the CSS class <code>lef-trigger-search</code> to any link or button (e.g., <code>&lt;a href="#" class="lef-trigger-search"&gt;Search&lt;/a&gt;</code>). When clicked, it will automatically focus the search bar on desktop or open the full-screen search modal on mobile devices.
+                        </div>
                     </div>
                 </article>
 
