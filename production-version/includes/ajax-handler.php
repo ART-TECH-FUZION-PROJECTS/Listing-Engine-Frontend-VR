@@ -2230,3 +2230,98 @@ function lef_admin_bulk_status_change() {
 	}
 }
 add_action( 'wp_ajax_lef_admin_bulk_status_change', 'lef_admin_bulk_status_change' );
+
+/**
+ * Admin: Export all reservations to CSV.
+ */
+function lef_admin_export_reservations_csv() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_die( 'Unauthorized' );
+	}
+
+	global $wpdb;
+	$table      = $wpdb->prefix . 'ls_reservation';
+	$prop_table = $wpdb->prefix . 'ls_property';
+
+	// Fetch all reservations with property title and host_id
+	$results = $wpdb->get_results(
+		"SELECT r.*, p.title as property_title, p.host_id
+		 FROM $table r
+		 LEFT JOIN $prop_table p ON r.property_id = p.id
+		 ORDER BY r.created_at DESC",
+		ARRAY_A
+	);
+
+	// Set headers for download
+	header( 'Content-Type: text/csv; charset=utf-8' );
+	header( 'Content-Disposition: attachment; filename=reservations_export_' . date( 'Y-m-d' ) . '.csv' );
+
+	$output = fopen( 'php://output', 'w' );
+
+	// Write CSV Headers
+	fputcsv( $output, array(
+		'ID',
+		'Reservation No',
+		'Property Name',
+		'Property URL',
+		'Status',
+		'Traveller Name',
+		'Traveller Email',
+		'Traveller Phone',
+		'Check-in',
+		'Check-out',
+		'Adults',
+		'Children',
+		'Infants',
+		'Total Price',
+		'Created At',
+		'Host Name',
+		'Host Email',
+		'Host Phone'
+	) );
+
+	// Write Rows
+	foreach ( $results as $row ) {
+		// Decode JSON data
+		$dates  = json_decode( $row['reserve_date'], true );
+		$guests = json_decode( $row['total_guests'], true );
+
+		// Fetch Traveller Details
+		$t_user  = get_userdata( $row['user_id'] );
+		$t_name  = get_user_meta( $row['user_id'], 'full_name', true );
+		$t_phone = get_user_meta( $row['user_id'], 'mobile_number', true );
+
+		// Fetch Host Details
+		$h_user  = get_userdata( $row['host_id'] );
+		$h_name  = get_user_meta( $row['host_id'], 'full_name', true );
+		$h_phone = get_user_meta( $row['host_id'], 'mobile_number', true );
+
+		// Property URL
+		$property_url = function_exists( 'lef_get_secure_detail_url' ) ? lef_get_secure_detail_url( $row['property_id'] ) : '';
+
+		fputcsv( $output, array(
+			$row['id'],
+			$row['reservation_number'],
+			$row['property_title'] ? $row['property_title'] : 'N/A',
+			$property_url,
+			ucfirst( $row['status'] ),
+			! empty( $t_name ) ? $t_name : ( $t_user ? $t_user->display_name : 'N/A' ),
+			$t_user ? $t_user->user_email : 'N/A',
+			! empty( $t_phone ) ? $t_phone : 'N/A',
+			isset( $dates['check_in'] ) ? $dates['check_in'] : 'N/A',
+			isset( $dates['check_out'] ) ? $dates['check_out'] : 'N/A',
+			isset( $guests['adults'] ) ? $guests['adults'] : 0,
+			isset( $guests['children'] ) ? $guests['children'] : 0,
+			isset( $guests['infants'] ) ? $guests['infants'] : 0,
+			$row['total_price'],
+			$row['created_at'],
+			! empty( $h_name ) ? $h_name : ( $h_user ? $h_user->display_name : 'N/A' ),
+			$h_user ? $h_user->user_email : 'N/A',
+			! empty( $h_phone ) ? $h_phone : 'N/A'
+		) );
+	}
+
+	fclose( $output );
+	exit;
+}
+add_action( 'wp_ajax_lef_admin_export_reservations_csv', 'lef_admin_export_reservations_csv' );

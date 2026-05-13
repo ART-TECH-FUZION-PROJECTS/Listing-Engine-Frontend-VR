@@ -50,6 +50,9 @@
         $clearSearch.on('click', lefReservClearSearch);
         $paginationControls.on('click', '.lef-reserv-page-btn', lefReservHandlePagination);
 
+        // Export Actions
+        $('#lef-reserv-export-csv').on('click', lefReservHandleExport);
+
         // Bulk Actions
         $selectAll.on('change', lefReservHandleSelectAll);
         $cardList.on('change', '.lef-reserv-item-checkbox', updateBulkUI);
@@ -227,6 +230,34 @@
         else lefReservCurrentPage = parseInt(pageAction);
 
         lefReservFetchData();
+    }
+
+    function lefReservHandleExport() {
+        const message = 'Are you sure you want to export all reservation data to a CSV file? This may take a few moments.';
+        
+        if (!window.LEF_Confirm) {
+            if (confirm(message)) executeExport();
+            return;
+        }
+
+        window.LEF_Confirm.open({
+            title: 'Export Reservations',
+            message: message
+        }, (confirmed) => {
+            if (confirmed) executeExport();
+        });
+
+        function executeExport() {
+            if (window.LEF_Toast) {
+                window.LEF_Toast.show('Generating CSV. Your download will start shortly...', 'success');
+            }
+            
+            // Trigger download after a slight delay so toast is seen
+            setTimeout(() => {
+                const url = `${lefReservData.ajax_url}?action=lef_admin_export_reservations_csv&nonce=${lefReservData.nonce}`;
+                window.location.href = url;
+            }, 800);
+        }
     }
 
     /**
