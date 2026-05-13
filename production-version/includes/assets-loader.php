@@ -257,6 +257,22 @@ function lef_enqueue_assets() {
 				true
 			);
 
+				// My Wishlist Assets
+			wp_enqueue_script(
+				'lef-my-wishlist-js',
+				LEF_PLUGIN_URL . 'frontend/assets/js/my-profile/my-wishlist.js',
+				array( 'jquery', 'lef-my-profile-js' ),
+				LEF_VERSION . '.' . ( file_exists( LEF_PLUGIN_DIR . 'frontend/assets/js/my-profile/my-wishlist.js' ) ? filemtime( LEF_PLUGIN_DIR . 'frontend/assets/js/my-profile/my-wishlist.js' ) : time() ),
+				true
+			);
+
+			wp_enqueue_style(
+				'lef-my-wishlist-css',
+				LEF_PLUGIN_URL . 'frontend/assets/css/my-profile/my-wishlist.css',
+				array( 'lef-my-profile-css' ),
+				file_exists( LEF_PLUGIN_DIR . 'frontend/assets/css/my-profile/my-wishlist.css' ) ? filemtime( LEF_PLUGIN_DIR . 'frontend/assets/css/my-profile/my-wishlist.css' ) : time()
+			);
+
 			// My Listings Assets
 			wp_enqueue_script(
 				'lef-my-listings-js',

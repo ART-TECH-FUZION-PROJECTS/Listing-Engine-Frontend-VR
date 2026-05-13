@@ -886,7 +886,7 @@ function lef_myprofile_load_screen() {
 
 	$screen = isset( $_POST['screen'] ) ? sanitize_key( $_POST['screen'] ) : 'edit-profile';
 	
-	$allowed_screens = array( 'edit-profile', 'pay-out', 'my-bookings', 'my-listings' );
+	$allowed_screens = array( 'edit-profile', 'pay-out', 'my-bookings', 'my-listings', 'my-wishlist' );
 	if ( ! in_array( $screen, $allowed_screens ) ) {
 		wp_send_json_error( array( 'message' => 'Invalid screen' ) );
 	}
@@ -2079,3 +2079,74 @@ function lef_ve_save_property() {
 	) );
 }
 add_action( 'wp_ajax_lef_ve_save_property', 'lef_ve_save_property' );
+
+/**
+ * Remove a single property from user wishlist.
+ */
+function lef_remove_from_wishlist() {
+	check_ajax_referer( 'lef_myprofile_nonce', 'nonce' );
+
+	if ( ! is_user_logged_in() ) {
+		wp_send_json_error( array( 'message' => 'Unauthorized' ) );
+	}
+
+	$property_id = isset( $_POST['property_id'] ) ? intval( $_POST['property_id'] ) : 0;
+	if ( ! $property_id ) {
+		wp_send_json_error( array( 'message' => 'Invalid property ID' ) );
+	}
+
+	global $wpdb;
+	$deleted = $wpdb->delete(
+		"{$wpdb->prefix}ls_wishlist",
+		array(
+			'user_id'     => get_current_user_id(),
+			'property_id' => $property_id
+		)
+	);
+
+	if ( $deleted !== false ) {
+		wp_send_json_success( array( 'message' => 'Removed from wishlist' ) );
+	} else {
+		wp_send_json_error( array( 'message' => 'Failed to remove' ) );
+	}
+}
+add_action( 'wp_ajax_lef_remove_from_wishlist', 'lef_remove_from_wishlist' );
+
+/**
+ * Bulk remove properties from user wishlist.
+ */
+function lef_bulk_remove_wishlist() {
+	check_ajax_referer( 'lef_myprofile_nonce', 'nonce' );
+
+	if ( ! is_user_logged_in() ) {
+		wp_send_json_error( array( 'message' => 'Unauthorized' ) );
+	}
+
+	$user_id      = get_current_user_id();
+	$property_ids = isset( $_POST['property_ids'] ) ? array_map( 'intval', (array) $_POST['property_ids'] ) : array();
+
+	global $wpdb;
+
+	if ( ! empty( $property_ids ) ) {
+		// Remove specific selection
+		$placeholders = implode( ',', array_fill( 0, count( $property_ids ), '%d' ) );
+		$query        = $wpdb->prepare(
+			"DELETE FROM {$wpdb->prefix}ls_wishlist WHERE user_id = %d AND property_id IN ($placeholders)",
+			array_merge( array( $user_id ), $property_ids )
+		);
+		$deleted = $wpdb->query( $query );
+	} else {
+		// Clear All
+		$deleted = $wpdb->delete(
+			"{$wpdb->prefix}ls_wishlist",
+			array( 'user_id' => $user_id )
+		);
+	}
+
+	if ( $deleted !== false ) {
+		wp_send_json_success( array( 'message' => ! empty( $property_ids ) ? 'Selected items removed' : 'Wishlist cleared successfully' ) );
+	} else {
+		wp_send_json_error( array( 'message' => 'Failed to process removal' ) );
+	}
+}
+add_action( 'wp_ajax_lef_bulk_remove_wishlist', 'lef_bulk_remove_wishlist' );
