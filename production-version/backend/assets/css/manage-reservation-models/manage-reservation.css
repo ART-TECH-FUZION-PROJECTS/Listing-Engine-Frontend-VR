@@ -237,12 +237,102 @@
     padding: 14px;
 }
 
+/* Bulk Actions */
+.lef-reserv-bulk-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.lef-reserv-select-all-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--leb-text-muted);
+    font-size: 0.9rem;
+    font-weight: 550;
+    margin-right: 1rem;
+}
+
+.lef-reserv-bulk-btn {
+    padding: 8px 16px;
+    border-radius: 0.8rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+}
+
+.lef-reserv-bulk-status-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--leb-bg-light);
+    padding: 4px;
+    border-radius: 0.8rem;
+    border: 1px solid var(--leb-border-color);
+}
+
+.lef-reserv-bulk-select {
+    background: transparent;
+    border: 0 !important;
+    font-size: 0.85rem !important;
+    padding: 0 10px !important;
+    color: var(--leb-text-color) !important;
+    cursor: pointer;
+}
+
+.lef-reserv-btn-primary {
+    background: var(--leb-primary-color);
+    color: var(--leb-white);
+}
+
+.lef-reserv-btn-primary:hover {
+    opacity: 0.9;
+}
+
+.lef-reserv-btn-danger {
+    background: var(--leb-error-color);
+    color: var(--leb-white);
+}
+
+.lef-reserv-btn-danger:hover {
+    opacity: 0.9;
+}
+
+.lef-reserv-btn-danger-outline {
+    background: transparent;
+    border-color: var(--leb-error-color);
+    color: var(--leb-error-color);
+}
+
+.lef-reserv-btn-danger-outline:hover {
+    background: var(--leb-error-color);
+    color: var(--leb-white);
+}
+
+.lef-reserv-checkbox {
+    width: 18px !important;
+    height: 18px !important;
+    cursor: pointer !important;
+    accent-color: var(--leb-primary-color);
+}
+
+/* Checkbox in Card */
+.lef-reserv-card-checkbox-wrap {
+    display: flex;
+    align-items: center;
+    padding-right: 12px;
+    border-right: 1px solid var(--leb-border-color);
+}
+
 .lef-reserv-card {
     border: 1px solid var(--leb-border-color);
     border-radius: 1rem;
     display: grid;
     gap: 1rem;
-    grid-template-columns: 56px minmax(0, 1fr) auto;
+    grid-template-columns: auto 56px minmax(0, 1fr) auto;
     padding: 0.8rem;
     transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
     cursor: pointer;

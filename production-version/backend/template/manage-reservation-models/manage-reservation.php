@@ -88,6 +88,26 @@ if (! defined('ABSPATH')) {
         <section class="lef-reserv-list-shell" aria-label="Reservation list">
             <div class="lef-reserv-list-head">
                 <h2 class="lef-reserv-list-title" id="lef-reserv-list-title">Pending Reservations</h2>
+                <div class="lef-reserv-bulk-actions">
+                    <div class="lef-reserv-select-all-wrap">
+                        <input type="checkbox" id="lef-reserv-select-all" class="lef-reserv-checkbox">
+                        <label for="lef-reserv-select-all">Select All</label>
+                    </div>
+
+                    <!-- Status Change Group -->
+                    <div id="lef-reserv-bulk-status-wrap" class="lef-reserv-bulk-status-wrap" style="display: none;">
+                        <select id="lef-reserv-bulk-status-select" class="lef-reserv-bulk-select">
+                            <option value="">Change Status</option>
+                            <option value="pending">Move to Pending</option>
+                            <option value="completed">Mark Completed</option>
+                            <option value="rejected">Mark Rejected</option>
+                        </select>
+                        <button type="button" id="lef-reserv-bulk-status-apply" class="lef-reserv-bulk-btn lef-reserv-btn-primary">Apply</button>
+                    </div>
+
+                    <button type="button" id="lef-reserv-delete-selected" class="lef-reserv-bulk-btn lef-reserv-btn-danger" style="display:none;">Delete Selected (<span id="lef-reserv-selected-count">0</span>)</button>
+                    <button type="button" id="lef-reserv-delete-all-rejected" class="lef-reserv-bulk-btn lef-reserv-btn-danger-outline" style="display:none;">Delete All Rejected</button>
+                </div>
             </div>
 
             <div class="lef-reserv-card-list" id="lef-reserv-card-list"></div>

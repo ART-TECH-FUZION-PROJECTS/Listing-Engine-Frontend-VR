@@ -2150,3 +2150,83 @@ function lef_bulk_remove_wishlist() {
 	}
 }
 add_action( 'wp_ajax_lef_bulk_remove_wishlist', 'lef_bulk_remove_wishlist' );
+
+/**
+ * Admin: Bulk delete reservations.
+ */
+function lef_admin_delete_reservations() {
+	check_ajax_referer( 'lef_reserv_nonce', 'nonce' );
+
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_send_json_error( array( 'message' => 'Unauthorized' ) );
+	}
+
+	$mode = isset( $_POST['mode'] ) ? sanitize_text_field( $_POST['mode'] ) : 'selected';
+	$status = isset( $_POST['status'] ) ? sanitize_text_field( $_POST['status'] ) : '';
+
+	global $wpdb;
+
+	if ( $mode === 'all_pending' ) {
+		$deleted = $wpdb->delete(
+			"{$wpdb->prefix}ls_reservation",
+			array( 'status' => 'pending' )
+		);
+	} elseif ( $mode === 'all_rejected' ) {
+		$deleted = $wpdb->delete(
+			"{$wpdb->prefix}ls_reservation",
+			array( 'status' => 'rejected' )
+		);
+	} else {
+		$ids = isset( $_POST['ids'] ) ? array_map( 'intval', (array) $_POST['ids'] ) : array();
+		if ( empty( $ids ) ) {
+			wp_send_json_error( array( 'message' => 'No reservations selected' ) );
+		}
+
+		$placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+		$query = $wpdb->prepare(
+			"DELETE FROM {$wpdb->prefix}ls_reservation WHERE id IN ($placeholders)",
+			$ids
+		);
+		$deleted = $wpdb->query( $query );
+	}
+
+	if ( $deleted !== false ) {
+		wp_send_json_success( array( 'message' => 'Reservations processed successfully' ) );
+	} else {
+		wp_send_json_error( array( 'message' => 'Failed to process reservations' ) );
+	}
+}
+add_action( 'wp_ajax_lef_admin_delete_reservations', 'lef_admin_delete_reservations' );
+
+/**
+ * Admin: Bulk update reservation status.
+ */
+function lef_admin_bulk_status_change() {
+	check_ajax_referer( 'lef_reserv_nonce', 'nonce' );
+
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_send_json_error( array( 'message' => 'Unauthorized' ) );
+	}
+
+	$ids = isset( $_POST['ids'] ) ? array_map( 'intval', (array) $_POST['ids'] ) : array();
+	$new_status = isset( $_POST['status'] ) ? sanitize_text_field( $_POST['status'] ) : '';
+
+	if ( empty( $ids ) || ! in_array( $new_status, array( 'pending', 'completed', 'rejected' ) ) ) {
+		wp_send_json_error( array( 'message' => 'Invalid data provided' ) );
+	}
+
+	global $wpdb;
+	$placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+	
+	$updated = $wpdb->query( $wpdb->prepare(
+		"UPDATE {$wpdb->prefix}ls_reservation SET status = %s WHERE id IN ($placeholders)",
+		array_merge( array( $new_status ), $ids )
+	) );
+
+	if ( $updated !== false ) {
+		wp_send_json_success( array( 'message' => 'Status updated successfully' ) );
+	} else {
+		wp_send_json_error( array( 'message' => 'Failed to update status' ) );
+	}
+}
+add_action( 'wp_ajax_lef_admin_bulk_status_change', 'lef_admin_bulk_status_change' );

@@ -1,6 +1,7 @@
 /**
  * Reservation Management JS
- * Handles AJAX fetching, searching, tabs, and modals.
+ * Handles AJAX fetching, searching, tabs, and bulk actions.
+ * Refined: Removed Delete All Pending, Kept Delete All Rejected.
  */
 (function($) {
     'use strict';
@@ -26,6 +27,15 @@
     const $paginationControls = $('#lef-reserv-pagination-controls');
     const $listTitle = $('#lef-reserv-list-title');
 
+    // Bulk Selectors
+    const $selectAll = $('#lef-reserv-select-all');
+    const $deleteSelected = $('#lef-reserv-delete-selected');
+    const $deleteAllRejected = $('#lef-reserv-delete-all-rejected');
+    const $selectedCount = $('#lef-reserv-selected-count');
+    const $bulkStatusWrap = $('#lef-reserv-bulk-status-wrap');
+    const $bulkStatusSelect = $('#lef-reserv-bulk-status-select');
+    const $bulkStatusApply = $('#lef-reserv-bulk-status-apply');
+
     /**
      * Initialization
      */
@@ -39,6 +49,13 @@
         $searchInput.on('blur', () => $searchBox.removeClass('lef-reserv-search-focused'));
         $clearSearch.on('click', lefReservClearSearch);
         $paginationControls.on('click', '.lef-reserv-page-btn', lefReservHandlePagination);
+
+        // Bulk Actions
+        $selectAll.on('change', lefReservHandleSelectAll);
+        $cardList.on('change', '.lef-reserv-item-checkbox', updateBulkUI);
+        $deleteSelected.on('click', () => handleBulkAction('delete', 'selected'));
+        $deleteAllRejected.on('click', () => handleBulkAction('delete', 'all_rejected'));
+        $bulkStatusApply.on('click', () => handleBulkAction('status'));
     }
 
     /**
@@ -48,7 +65,6 @@
         if (lefReservFetching) return;
         lefReservFetching = true;
 
-        // Show loading state if needed (optional)
         $cardList.css('opacity', '0.5');
 
         $.ajax({
@@ -99,6 +115,7 @@
             $cardList.html('').hide();
             $emptyState.addClass('lef-reserv-empty-visible');
             $pagination.hide();
+            updateBulkUI(); 
             return;
         }
 
@@ -111,22 +128,25 @@
         data.items.forEach((item, index) => {
             const serialNo = ((data.current_page - 1) * data.per_page) + index + 1;
             cardsHtml += `
-            <article class="lef-reserv-card">
+            <article class="lef-reserv-card" data-id="${item.id}">
+                <div class="lef-reserv-card-checkbox-wrap">
+                    <input type="checkbox" class="lef-reserv-item-checkbox lef-reserv-checkbox" data-id="${item.id}">
+                </div>
                 <div class="lef-reserv-sno">${serialNo}</div>
                 <div class="lef-reserv-card-info">
                     <div class="lef-reserv-field">
-                        <span class="lef-reserv-field-label lef-reserv-field-label-title">Reservation Number</span>
-                        <span class="lef-reserv-field-value lef-reserv-field-value-title">${item.reservation_number}</span>
+                        <span class="lef-reserv-field-label">Reservation Number</span>
+                        <span class="lef-reserv-field-value">${item.reservation_number}</span>
                     </div>
                     <div class="lef-reserv-field lef-reserv-field-status">
-                        <span class="lef-reserv-field-label lef-reserv-field-label-status">Status</span>
-                        <span class="lef-reserv-status-badge lef-reserv-field-value-status" data-lef-reserv-status="${item.status}">
+                        <span class="lef-reserv-field-label">Status</span>
+                        <span class="lef-reserv-status-badge" data-lef-reserv-status="${item.status}">
                             ${item.status.charAt(0).toUpperCase() + item.status.slice(1)}
                         </span>
                     </div>
                     <div class="lef-reserv-field">
-                        <span class="lef-reserv-field-label lef-reserv-field-label-date">Date Requested</span>
-                        <span class="lef-reserv-field-value lef-reserv-field-value-date">${item.created_at}</span>
+                        <span class="lef-reserv-field-label">Date Requested</span>
+                        <span class="lef-reserv-field-value">${item.created_at}</span>
                     </div>
                 </div>
                 <div class="lef-reserv-card-actions">
@@ -138,7 +158,6 @@
                         View
                     </a>
                 </div>
-
             </article>`;
         });
         $cardList.html(cardsHtml);
@@ -153,13 +172,15 @@
 
         let pagHtml = '';
         pagHtml += `<button class="lef-reserv-page-btn" data-page="prev" ${data.current_page === 1 ? 'disabled' : ''}>&laquo;</button>`;
-        
         for (let i = 1; i <= totalPages; i++) {
             pagHtml += `<button class="lef-reserv-page-btn ${i === data.current_page ? 'lef-reserv-page-active' : ''}" data-page="${i}">${i}</button>`;
         }
-
         pagHtml += `<button class="lef-reserv-page-btn" data-page="next" ${data.current_page === totalPages ? 'disabled' : ''}>&raquo;</button>`;
         $paginationControls.html(pagHtml);
+
+        // Reset Selection on Render
+        $selectAll.prop('checked', false);
+        updateBulkUI();
     }
 
     /**
@@ -184,7 +205,6 @@
         if (val.length >= 2 || val.length === 0) {
             lefReservSearchTerm = val;
             lefReservCurrentPage = 1;
-            // Debounce maybe? for now direct
             clearTimeout(window.lefReservSearchTimer);
             window.lefReservSearchTimer = setTimeout(lefReservFetchData, 400);
         }
@@ -202,18 +222,110 @@
         const $this = $(this);
         const pageAction = $this.data('page');
 
-        if (pageAction === 'prev') {
-            lefReservCurrentPage--;
-        } else if (pageAction === 'next') {
-            lefReservCurrentPage++;
-        } else {
-            lefReservCurrentPage = parseInt(pageAction);
-        }
+        if (pageAction === 'prev') lefReservCurrentPage--;
+        else if (pageAction === 'next') lefReservCurrentPage++;
+        else lefReservCurrentPage = parseInt(pageAction);
 
         lefReservFetchData();
     }
 
-    // Run on Doc Ready
+    /**
+     * Bulk Action Logic
+     */
+    function lefReservHandleSelectAll() {
+        const checked = $(this).prop('checked');
+        $('.lef-reserv-item-checkbox').prop('checked', checked);
+        updateBulkUI();
+    }
+
+    function updateBulkUI() {
+        const selectedCount = $('.lef-reserv-item-checkbox:checked').length;
+        const totalOnPage = $('.lef-reserv-item-checkbox').length;
+        
+        $selectedCount.text(selectedCount);
+        
+        // Dynamic visibility based on selection and current tab
+        $deleteSelected.toggle(selectedCount > 0);
+        $bulkStatusWrap.toggle(selectedCount > 0);
+
+        // "Delete All" visibility - ONLY for rejected
+        $deleteAllRejected.toggle(lefReservCurrentStatus === 'rejected');
+
+        $selectAll.prop('checked', selectedCount === totalOnPage && totalOnPage > 0);
+
+        // Update status options based on tab
+        $bulkStatusSelect.find('option').show();
+        if (lefReservCurrentStatus === 'pending') {
+            $bulkStatusSelect.find('option[value="pending"]').hide();
+        } else if (lefReservCurrentStatus === 'completed') {
+            $bulkStatusSelect.find('option[value="completed"]').hide();
+        } else if (lefReservCurrentStatus === 'rejected') {
+            $bulkStatusSelect.find('option[value="rejected"]').hide();
+        }
+    }
+
+    function handleBulkAction(type, mode) {
+        let ids = [];
+        let message = '';
+        let ajaxAction = 'lef_admin_delete_reservations';
+        let extraData = {};
+
+        if (type === 'delete') {
+            if (mode === 'selected') {
+                ids = $('.lef-reserv-item-checkbox:checked').map(function() { return $(this).data('id'); }).get();
+                if (!ids.length) return;
+                message = `Are you sure you want to delete ${ids.length} selected reservations?`;
+            } else if (mode === 'all_rejected') {
+                message = 'Are you sure you want to delete ALL rejected reservations? This cannot be undone.';
+            }
+            extraData = { mode: mode, ids: ids };
+        } else if (type === 'status') {
+            const newStatus = $bulkStatusSelect.val();
+            if (!newStatus) {
+                window.LEF_Toast.show('Please select a status first.', 'error');
+                return;
+            }
+            ids = $('.lef-reserv-item-checkbox:checked').map(function() { return $(this).data('id'); }).get();
+            if (!ids.length) return;
+            message = `Are you sure you want to move ${ids.length} reservations to ${newStatus}?`;
+            ajaxAction = 'lef_admin_bulk_status_change';
+            extraData = { status: newStatus, ids: ids };
+        }
+
+        if (!window.LEF_Confirm) {
+            if (confirm(message)) executeBulkAction(ajaxAction, extraData);
+            return;
+        }
+
+        window.LEF_Confirm.open({
+            title: 'Confirm Action',
+            message: message
+        }, (confirmed) => {
+            if (confirmed) executeBulkAction(ajaxAction, extraData);
+        });
+    }
+
+    function executeBulkAction(action, data) {
+        $.ajax({
+            url: lefReservData.ajax_url,
+            type: 'POST',
+            data: {
+                action: action,
+                nonce: lefReservData.nonce,
+                ...data
+            },
+            success: function(res) {
+                if (res.success) {
+                    window.LEF_Toast.show(res.data.message, 'success');
+                    $bulkStatusSelect.val('');
+                    lefReservFetchData();
+                } else {
+                    window.LEF_Toast.show(res.data.message || 'Action failed', 'error');
+                }
+            }
+        });
+    }
+
     $(document).ready(lefReservInit);
 
 })(jQuery);
