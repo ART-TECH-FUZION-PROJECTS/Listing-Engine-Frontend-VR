@@ -11,11 +11,6 @@
    Layout & Scaffolding
    ───────────────────────────────────────────────────────── */
 
-.lef-prof-page {
-    margin: 4rem auto;
-    min-height: 100vh;
-}
-
 .lef-prof-shell {
     display: grid;
     gap: 22px;
@@ -285,12 +280,77 @@ body.lef-prof-sidebar-lock {
         gap: 10px;
     }
 
-    .lef-prof-menu-toggle, .lef-prof-sidebar-close {
+    .lef-prof-menu-toggle,
+    .lef-prof-sidebar-close {
         width: 30px;
         height: 30px;
     }
 
     .lef-prof-topbar-title {
         font-size: 1.6rem;
+    }
+}
+
+/* ─────────────────────────────────────────────────────────
+   Login Required View
+   ───────────────────────────────────────────────────────── */
+
+.lef-myprofile-login-required {
+    padding: 80px 40px;
+    text-align: center;
+    background: var(--leb-white);
+    border: 1px solid var(--leb-border-color);
+    border-radius: 12px;
+    margin: 20px 0;
+}
+
+.lef-myprofile-login-required h2 {
+    margin-bottom: 12px;
+    font-size: 2.4rem;
+    color: var(--leb-secondary-color);
+    font-weight: 600;
+}
+
+.lef-myprofile-login-required p {
+    margin-bottom: 32px;
+    color: var(--leb-text-muted);
+    font-size: 1.4rem;
+    max-width: 300px;
+    margin-left: auto;
+    line-height: 1.4em;
+    font-weight: 300;
+    margin-right: auto;
+}
+
+.lef-myprofile-login-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--leb-primary-color);
+    color: var(--leb-white) !important;
+    padding: 0.5em 2em;
+    border-radius: 1rem;
+    font-size: 1.6rem;
+    font-weight: 400;
+    text-decoration: none !important;
+    transition: all 0.3s ease;
+}
+
+.lef-myprofile-login-btn:hover {
+    background: var(--leb-primary-dark);
+    transform: translateY(-2px);
+}
+
+.lef-myprofile-login-btn:active {
+    transform: translateY(0);
+}
+
+@media (max-width: 640px) {
+    .lef-myprofile-login-required {
+        padding: 60px 20px;
+    }
+
+    .lef-myprofile-login-required h2 {
+        font-size: 2rem;
     }
 }

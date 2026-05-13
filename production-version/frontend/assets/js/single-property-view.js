@@ -8,7 +8,7 @@
  *
  * Dependencies: jQuery (WordPress default), LEF_Toast (global toaster)
  * Localized data: lef_spv_data { ajax_url, nonce, property_id, price,
- *                                 max_guests, blocked_dates, is_logged_in }
+ *                                 max_guests, blocked_dates, is_logged_in, is_host, has_mobile, login_url }
  *
  * @package ListingEngineFrontend
  */
@@ -51,6 +51,8 @@
     const MAX_GUEST = parseInt(DATA.max_guests, 10) || 10;
     const BLOCKED   = Array.isArray(DATA.blocked_dates) ? DATA.blocked_dates : [];
     const LOGGED_IN = DATA.is_logged_in === '1';
+    const IS_HOST   = DATA.is_host === '1';
+    const HAS_MOBILE = DATA.has_mobile === '1';
 
     /** Shared calendar state (synced across all calendar instances) */
     const calState = {
@@ -84,6 +86,7 @@
         loadSimilarProperties();
         initMobileSlider();
         initMobileBackButton();
+        restoreBookingState();
     });
 
 
@@ -125,20 +128,8 @@
     function initShareButtons() {
         $('#lef-spv-share-btn, #lef-spv-share-btn-mb').on('click', function () {
             const url = window.location.href;
-            if (navigator.clipboard) {
-                navigator.clipboard.writeText(url).then(function () {
-                    window.LEF_Toast && LEF_Toast.show('Link copied!', 'success');
-                });
-            } else {
-                // Fallback
-                const input = document.createElement('input');
-                input.value = url;
-                document.body.appendChild(input);
-                input.select();
-                document.execCommand('copy');
-                document.body.removeChild(input);
-                window.LEF_Toast && LEF_Toast.show('Link copied!', 'success');
-            }
+            const whatsappUrl = 'https://wa.me/?text=' + encodeURIComponent('Check out this property: ' + url);
+            window.open(whatsappUrl, '_blank');
         });
     }
 
@@ -633,9 +624,34 @@
 
     function submitReservation($btn) {
         if (!LOGGED_IN) {
+            // Save state before login so we can restore it after reload
+            saveBookingState();
+
             window.LEF_Toast && LEF_Toast.show('Please log in to make a reservation.', 'error');
+            setTimeout(() => {
+                const currentUrl = window.location.href;
+                const redirectUrl = DATA.login_url + (DATA.login_url.indexOf('?') !== -1 ? '&' : '?') + 'redirect_to=' + encodeURIComponent(currentUrl);
+                
+                // Simulate a click on a hidden link to trigger global login popups/interceptors.
+                // We include the class 'lef-myprofile-login-btn' for consistency with the My Profile page.
+                const $link = $('<a href="' + redirectUrl + '" class="lef-myprofile-login-btn" style="display:none;"></a>');
+                $('body').append($link);
+                $link[0].click();
+                $link.remove();
+            }, 500); 
             return;
         }
+
+        if (IS_HOST) {
+            window.LEF_Toast && LEF_Toast.show('Hosts are not allowed to make reservations.', 'error');
+            return;
+        }
+
+        if (!HAS_MOBILE) {
+            window.LEF_Toast && LEF_Toast.show('Please set your mobile number.', 'error');
+            return;
+        }
+
         if (!calState.checkIn || !calState.checkOut) {
             window.LEF_Toast && LEF_Toast.show('Please select check-in and check-out dates.', 'error');
             return;
@@ -788,6 +804,49 @@
                 window.location.href = '/';
             }
         });
+    }
+
+    /* ==================== STATE PERSISTENCE ==================== */
+    /**
+     * Saves current booking state (dates, guests) to sessionStorage.
+     */
+    function saveBookingState() {
+        const state = {
+            checkIn: calState.checkIn ? formatDate(calState.checkIn) : null,
+            checkOut: calState.checkOut ? formatDate(calState.checkOut) : null,
+            guests: guests
+        };
+        sessionStorage.setItem('lef_pending_booking', JSON.stringify(state));
+    }
+
+    /**
+     * Restores booking state from sessionStorage if it exists.
+     */
+    function restoreBookingState() {
+        const raw = sessionStorage.getItem('lef_pending_booking');
+        if (!raw) return;
+
+        try {
+            const state = JSON.parse(raw);
+            if (state.checkIn)  calState.checkIn  = parseDate(state.checkIn);
+            if (state.checkOut) calState.checkOut = parseDate(state.checkOut);
+            
+            if (state.guests) {
+                guests.adults   = state.guests.adults;
+                guests.children = state.guests.children;
+                guests.infants  = state.guests.infants;
+            }
+
+            // Sync UI after restoration
+            syncGuestCounters();
+            renderAllCalendars();
+            syncDatesToForm();
+
+            // Clear to avoid multiple restorations
+            sessionStorage.removeItem('lef_pending_booking');
+        } catch (e) {
+            console.error('Failed to restore booking state:', e);
+        }
     }
 
 

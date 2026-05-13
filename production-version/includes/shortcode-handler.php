@@ -151,9 +151,11 @@ function lef_render_single_property_view() {
  */
 function lef_render_my_profile() {
 	if ( ! is_user_logged_in() ) {
-		return '<div class="lef-myprofile-login-required" style="padding: 40px; text-align: center;">
-					<h2 style="margin-bottom: 20px;">Please Login</h2>
+		$login_url = lef_get_login_url();
+		return '<div class="lef-myprofile-login-required">
+					<h2>Please Login</h2>
 					<p>You must be logged in to access your profile dashboard.</p>
+					<a href="' . esc_url( $login_url ) . '" class="lef-myprofile-login-btn">Login Now</a>
 				</div>';
 	}
 

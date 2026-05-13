@@ -162,7 +162,9 @@ function lef_enqueue_assets() {
 				'blocked_dates' => $spv_blocked,
 				'is_logged_in'  => is_user_logged_in() ? '1' : '0',
 				'is_host'       => in_array( 'host', (array) wp_get_current_user()->roles ) ? '1' : '0',
+				'has_mobile'    => ( is_user_logged_in() && ! empty( get_user_meta( get_current_user_id(), 'mobile_number', true ) ) ) ? '1' : '0',
 				'plugin_url'    => LEF_PLUGIN_URL,
+				'login_url'     => lef_get_login_url(),
 			) );
 		}
 

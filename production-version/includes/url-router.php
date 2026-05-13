@@ -55,3 +55,23 @@ function lef_get_decoded_listing_id() {
 	$decoded_id = base64_decode( $encoded_id );
 	return is_numeric( $decoded_id ) ? intval( $decoded_id ) : false;
 }
+
+/**
+ * Fetch the custom login URL from the admin management table.
+ *
+ * @return string The login URL, or fallback to default WP login URL.
+ */
+function lef_get_login_url() {
+	global $wpdb;
+	
+	$table_name = $wpdb->prefix . 'admin_management';
+	
+	// Query for the 'login' entry value.
+	$login_url = $wpdb->get_var( $wpdb->prepare(
+		"SELECT value FROM $table_name WHERE name = %s",
+		'login'
+	));
+
+	// Return the custom URL if found and valid, else fallback to WP default.
+	return $login_url ? esc_url( $login_url ) : wp_login_url();
+}

@@ -416,7 +416,6 @@ span.lefdk-hd-i-tag {
 
 .lefdk-cal-day-in-range {
     background-color: var(--leb-bg-light-2);
-    border-radius: 0;
 }
 
 .lefdk-cal-day-unav {
@@ -1057,9 +1056,9 @@ span.lefdk-lf-price-unit {
     padding-bottom: 100px;
     border-radius: 22px;
     margin-top: -30px;
-    z-index: 1;
     background-color: var(--leb-white);
     gap: 3rem;
+    z-index: 99;
 }
 
 .lefmb-prop-heading-cont {
@@ -1338,7 +1337,6 @@ span.lefmb-hd-i-tag {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    z-index: 100;
 }
 
 .lefmb-reserv-right-cont {
@@ -1409,7 +1407,7 @@ span.lefmb-hd-i-tag {
     width: 100%;
     height: 100%;
     background: rgba(0, 0, 0, 0.5);
-    z-index: 9999;
+    z-index: 2000;
     display: none;
     align-items: center;
     justify-content: center;
