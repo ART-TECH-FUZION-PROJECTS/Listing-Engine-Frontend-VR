@@ -29,7 +29,6 @@ $user_id = get_current_user_id();
             </div>
             <div>
                 <h2 class="lef-my-book-title">My Bookings</h2>
-                <p class="lef-my-book-subtitle">Track and manage your property reservations status.</p>
             </div>
         </div>
         <div class="lef-my-book-summary">

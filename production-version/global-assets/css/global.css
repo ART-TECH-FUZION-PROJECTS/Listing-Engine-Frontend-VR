@@ -69,10 +69,11 @@
  * ============================================ */
 
 /* Remove default browser/WordPress outline and focus shadow centrally */
-*:focus,
-*:focus-visible,
-*:active {
+.lef-global-plugin-wrapper *:focus,
+.lef-global-plugin-wrapper *:focus-visible,
+.lef-global-plugin-wrapper *:active {
     outline: none !important;
+    box-shadow: none !important;
 }
 
 /* Reset WordPress default paragraph margin and set base typography color */

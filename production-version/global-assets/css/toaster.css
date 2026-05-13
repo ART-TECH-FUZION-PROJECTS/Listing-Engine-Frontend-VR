@@ -29,6 +29,7 @@
     font-family: var(--leb-font-main);
     font-size: 14px;
     font-weight: 500;
+    min-height: 25px;
 }
 
 .lef-toast.show {

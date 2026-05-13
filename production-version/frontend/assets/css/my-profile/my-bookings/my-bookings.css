@@ -48,13 +48,6 @@
     line-height: 1.2;
 }
 
-.lef-my-book-subtitle {
-    color: var(--leb-text-muted);
-    font-size: 1.2rem;
-    font-weight: 400;
-    width: 90%;
-}
-
 .lef-my-book-summary {
     align-items: center;
     background: var(--leb-primary-light-bg);
