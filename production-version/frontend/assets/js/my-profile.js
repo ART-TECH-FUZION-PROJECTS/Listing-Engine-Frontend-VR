@@ -37,7 +37,6 @@
       this.$close = $("#lef-prof-sidebar-close");
       this.$bucket = $("#lef-myprofile-content-bucket");
       this.$menuBtns = $(".lef-prof-menu-btn[data-screen]");
-      this.$logoutBtn = $(".lef-prof-logout-trigger-container a");
     },
 
     bindEvents() {
@@ -55,13 +54,6 @@
           this.loadScreen(screen);
           this.toggleSidebar(false);
         }
-      });
-
-      // Logout
-      this.$logoutBtn.on("click", (e) => {
-        e.preventDefault();
-        const targetUrl = $(e.currentTarget).attr("href");
-        this.handleLogout(targetUrl);
       });
     },
 
@@ -121,42 +113,6 @@
           this.$bucket.removeClass("is-loading");
         },
       });
-    },
-
-    handleLogout(redirectUrl) {
-      if (!window.LEF_Confirm) {
-        console.error("LEF_Confirm component not found.");
-        // Fallback direct redirect if component missing
-        if (redirectUrl) window.location.href = redirectUrl;
-        return;
-      }
-
-      // Directly update modal button labels via JS as requested
-      $('#lef-confirm-yes').text('Confirm');
-      $('#lef-confirm-no').text('Cancel');
-
-      window.LEF_Confirm.open(
-        {
-          title: "Confirmation",
-          message: "Are you sure, you want to logout?",
-        },
-        (confirmed) => {
-          if (confirmed) {
-            this.performLogoutRedirect(redirectUrl);
-          }
-        },
-      );
-    },
-
-    performLogoutRedirect(redirectUrl) {
-      if (window.LEF_Toast) window.LEF_Toast.show("Logging out...", "info");
-
-      // Redirect directly to the URL without an extra AJAX call
-      if (redirectUrl && redirectUrl !== "#") {
-        window.location.href = redirectUrl;
-      } else {
-        window.location.href = "/";
-      }
     },
   };
 
