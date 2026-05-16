@@ -94,7 +94,6 @@
             copyToClipboard(text);
         });
 
-        console.log('LEF Dashboard: initialized.');
     }
 
     // Run on DOM ready
