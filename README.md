@@ -1,4 +1,4 @@
-# Listing Engine Frontend (VR)
+# Listing Engine Frontend - Vacation Rental Websites wordpress plugin
 
 | | |
 |---|---|
@@ -18,26 +18,14 @@
 ## Table of Contents
 
 1. [About This Plugin](#about-this-plugin)
-2. [Getting Started](#getting-started)
-   - [Prerequisites](#prerequisites)
-   - [Download the Repository](#download-the-repository)
-   - [Set Up Local WordPress](#set-up-local-wordpress)
-   - [Install and Run the Plugin](#install-and-run-the-plugin)
-3. [Features Overview](#features-overview)
-4. [Installation](#installation)
-5. [User Guide](#user-guide)
-6. [Shortcodes Reference](#shortcodes-reference)
-7. [Developer Guide](#developer-guide)
-   - [Folder Structure](#folder-structure)
-   - [Customizing the Plugin](#customizing-the-plugin)
-   - [Adding Shortcodes](#adding-shortcodes)
-   - [Adding AJAX Endpoints](#adding-ajax-endpoints)
-   - [Phone Validation System](#phone-validation-system)
-8. [Companion Routing Plugin](#companion-routing-plugin)
-9. [Database Tables](#database-tables)
-10. [Deployment Guide](#deployment-guide)
-11. [Troubleshooting](#troubleshooting)
-12. [Credits](#credits)
+2. [Setup Guide](#setup-guide)
+3. [Shortcodes Reference](#shortcodes-reference)
+4. [User Guide](#user-guide)
+5. [Developer Guide](#developer-guide)
+6. [Companion Routing Plugin](#companion-routing-plugin)
+7. [Database Tables](#database-tables)
+8. [Troubleshooting](#troubleshooting)
+9. [Credits](#credits)
 
 ---
 
@@ -49,71 +37,17 @@ The plugin integrates with WordPress shortcodes, AJAX handlers, user roles, emai
 
 ---
 
-## Getting Started
+## Setup Guide
 
-### Prerequisites
+### Step 1: Activate the Plugin
 
-- **Git** — [Download Git](https://git-scm.com/downloads)
-- **Local WordPress environment** — [LocalWP](https://localwp.com/) (recommended), XAMPP, Docker, or MAMP/WAMP
-- **A code editor** — VS Code, Sublime, PHPStorm, or similar
+Go to **WP Admin > Plugins** and click **Activate** on **Listing Engine Frontend**. The **LEF** menu will appear in the admin sidebar.
 
-### Download the Repository
+### Step 2: Install the Companion Routing Plugin
 
-#### Option 1: Clone via Git (recommended)
+This plugin requires the companion **Admin Management** plugin for page routing. Install and activate it on the same WordPress site.
 
-```bash
-git clone https://github.com/your-username/Vacation-Rental-Listing-Engine-Frontend.git
-cd Vacation-Rental-Listing-Engine-Frontend
-```
-
-#### Option 2: Download as ZIP
-
-1. Open the repository on GitHub
-2. Click **Code** > **Download ZIP**
-3. Extract to your desired location
-
-### Set Up Local WordPress
-
-#### Using LocalWP (Recommended)
-
-1. Install [LocalWP](https://localwp.com/)
-2. Create a new site and wait for setup to complete
-3. Click **WP Admin** to access the dashboard
-
-WordPress path:
-- **macOS:** `~/Local Sites/<site-name>/app/public`
-- **Windows:** `C:\Users\<YourName>\Local Sites\<site-name>\app\public`
-
-#### Using XAMPP
-
-1. Start Apache + MySQL from XAMPP Control Panel
-2. Extract WordPress into `htdocs/wordpress`
-3. Create a database via `http://localhost/phpmyadmin`
-4. Complete WordPress setup at `http://localhost/wordpress`
-
-### Install and Run the Plugin
-
-#### 1. Copy plugin to WordPress
-
-```bash
-# LocalWP (macOS)
-cp -r production-version ~/Local\ Sites/<site-name>/app/public/wp-content/plugins/listing-engine-frontend
-
-# XAMPP (Windows)
-xcopy /E /I production-version C:\xampp\htdocs\wordpress\wp-content\plugins\listing-engine-frontend
-```
-
-Or drag the `production-version` folder into `wp-content/plugins/` and rename it to `listing-engine-frontend`.
-
-#### 2. Activate the plugin
-
-Go to **WP Admin > Plugins** and activate **Listing Engine Frontend**. The **LEF** menu will appear in the sidebar.
-
-#### 3. Install the companion Admin Management plugin
-
-This plugin requires a companion plugin that manages the `wp_admin_management` table for page routing. Install and activate it the same way.
-
-#### 4. Create required pages
+### Step 3: Create Required Pages
 
 Create these pages in **WP Admin > Pages > Add New**:
 
@@ -124,88 +58,19 @@ Create these pages in **WP Admin > Pages > Add New**:
 | My Profile      | `[lef_my_profile]`         |
 | Home (optional) | `[premium_search_bar]`     |
 
-#### 5. Set up route mapping
+### Step 4: Configure Route Mapping
 
-Use the companion plugin to map routes in `wp_admin_management`:
-- `Listing Archive` → Listing Archive page ID
-- `Listing Single View` → Property Detail page ID
+Use the companion Admin Management plugin to add route records in the `wp_admin_management` table:
 
-#### 6. Create LEF database tables
+| Route Name            | Point To                    |
+|-----------------------|-----------------------------|
+| `Listing Archive`     | Listing Archive page ID     |
+| `Listing Single View` | Property Detail page ID     |
+| `Logout` (optional)   | Custom logout page ID       |
 
-Go to **LEF > Database** and click **Create / Repair** for each table.
+### Step 5: Create LEF Database Tables
 
-### Working with the Code
-
-```bash
-# Navigate to production folder
-cd Vacation-Rental-Listing-Engine-Frontend/production-version
-
-# Sync changes to minify version
-cp -r production-version/* minify-version/
-
-# Commit and push
-git add . && git commit -m "description" && git push origin main
-```
-
-All changes in `production-version/` reflect immediately in WordPress — no build step required.
-
----
-
-## Features Overview
-
-- **Property Archive** — Full listing grid with URL-driven filters for location, type, price, amenities, guests, check-in/out dates, and sorting.
-- **Premium Search Bar** — Standalone search hero with location autocomplete, date picker, guest selector, and GPS-based reverse geocoding via OpenStreetMap Nominatim.
-- **Curated Property Sections** — Display featured or location-filtered properties in grid or carousel layouts.
-- **Single Property Pages** — Image gallery, description, amenities, host info, blocked-date awareness, reviews, wishlist toggle, similar properties, and reservation form.
-- **User Dashboard** — Profile editing, OTP verification, password management, and role-based sections (bookings for travellers, listings for hosts, payouts for hosts/admins).
-- **Admin Panel** — Reservation management, LEF database repair, and shortcode reference.
-- **Email Notifications** — OTP, reservation confirmations, and profile update emails via `wp_mail()`.
-
----
-
-## Installation
-
-1. **Choose the correct version:**
-   - `production-version/` — Readable source code for development.
-   - `minify-version/` — Distribution-ready copy for deployment.
-
-2. **Place the plugin** in `wp-content/plugins/listing-engine-frontend/`.
-
-3. **Activate** from WP Admin > Plugins.
-
-4. **Create pages** with shortcodes listed in [Shortcodes Reference](#shortcodes-reference).
-
-5. **Install companion Admin Management plugin** for `wp_admin_management` routing.
-
-6. **Create LEF tables** from LEF > Database.
-
-7. **Add route records** in `wp_admin_management` through the companion plugin.
-
----
-
-## User Guide
-
-### For Site Owners
-
-- Add listing pages using shortcodes.
-- Manage reservations from **LEF > Manage Reserv**.
-- Create or repair tables from **LEF > Database**.
-- Reference shortcodes from **LEF > Dashboard**.
-
-### For Travellers
-
-- Browse and search properties by location, dates, guests, and amenities.
-- Save favourites to wishlist.
-- Submit reservation requests.
-- Leave reviews after completed stays.
-- Manage bookings and profile from dashboard.
-
-### For Hosts
-
-- Create, edit, duplicate, and delete listings.
-- Manage listing status.
-- Store payout details (bank account, UPI).
-- View and manage listings from dashboard.
+Go to **LEF > Database** in the admin panel and click **Create / Repair** for each table.
 
 ---
 
@@ -213,13 +78,13 @@ All changes in `production-version/` reflect immediately in WordPress — no bui
 
 ### `[listing_engine_view]`
 
-Main property archive page with full filtering, sorting, and wishlist support.
+Main property archive page with filtering, sorting, and wishlist support.
 
 ```text
 [listing_engine_view]
 ```
 
-**URL Parameters:**
+**URL Filter Parameters:**
 
 | Parameter   | Description            |
 |-------------|------------------------|
@@ -242,12 +107,12 @@ Curated property sections for homepages or landing pages.
 [selected_list_view count="6" view="grid" location="Goa" type="Villa"]
 ```
 
-| Attribute  | Values            | Default | Description              |
-|------------|-------------------|---------|--------------------------|
-| `count`    | integer           | `9`     | Number of properties     |
-| `view`     | `grid`, `carousel`| `grid`  | Display layout           |
-| `location` | string            | empty   | Filter by location       |
-| `type`     | string            | empty   | Filter by property type  |
+| Attribute  | Values            | Default | Description          |
+|------------|-------------------|---------|----------------------|
+| `count`    | integer           | `9`     | Number of properties |
+| `view`     | `grid`, `carousel`| `grid`  | Display layout       |
+| `location` | string            | empty   | Filter by location   |
+| `type`     | string            | empty   | Filter by type       |
 
 ### `[premium_search_bar]`
 
@@ -259,7 +124,7 @@ Standalone search bar for hero sections.
 
 ### `[single_property_view]`
 
-Property detail page. Resolves property from `property_ref` URL parameter automatically.
+Property detail page. Automatically resolves the property from the `property_ref` URL parameter.
 
 ```text
 [single_property_view]
@@ -272,6 +137,32 @@ Logged-in user dashboard with role-based access.
 ```text
 [lef_my_profile]
 ```
+
+---
+
+## User Guide
+
+### For Site Owners
+
+- Add listing pages using the shortcodes above.
+- Manage reservations from **LEF > Manage Reserv**.
+- Create or repair plugin tables from **LEF > Database**.
+- View all shortcode references from **LEF > Dashboard**.
+
+### For Travellers
+
+- Browse and search properties by location, dates, guests, and amenities.
+- Save favourites to wishlist.
+- Submit reservation requests for available properties.
+- Leave reviews after completed stays.
+- Manage bookings and profile from the dashboard.
+
+### For Hosts
+
+- Create, edit, duplicate, and delete your listings.
+- Manage listing status (draft, published, etc.).
+- Store payout details (bank account, UPI) for receiving earnings.
+- View and manage your listings from the dashboard.
 
 ---
 
@@ -292,12 +183,13 @@ Logged-in user dashboard with role-based access.
 | `frontend/template/`            | Frontend shortcode templates                          |
 | `backend/template/`             | Admin screen templates                                |
 | `mails/`                        | Email templates                                       |
-| `global-assets/`                | Shared CSS/JS/UI components                           |
+| `components/`                   | Shared CSS/JS/UI components                           |
+| `images/`                       | Global placeholder images                             |
 
 ### Customizing the Plugin
 
 - **Markup:** `frontend/template/` or `backend/template/`
-- **Styles:** `frontend/assets/css/`, `backend/assets/css/`, or `global-assets/css/global.css`
+- **Styles:** `frontend/assets/css/`, `backend/assets/css/`, or `components/global/global.css`
 - **JavaScript:** `frontend/assets/js/` or `backend/assets/js/`
 - **Email Templates:** `mails/`
 
@@ -319,14 +211,17 @@ Logged-in user dashboard with role-based access.
 
 Phone validation is handled via JavaScript — no external dependencies required.
 
-**File:** `global-assets/js/phone-core.js`
+**File:** `components/global/phone-core.js`
 
 **`PhoneCore` API:**
-- `getCountries()` — Returns all country data
-- `findCountry(code)` — Find country by calling code
-- `detectCountry(number)` — Auto-detect country from number prefix
-- `validate(number, country)` — Validate phone against selected country rules
-- `format(number)` — Format phone number display
+
+| Method              | Description                          |
+|---------------------|--------------------------------------|
+| `getCountries()`    | Returns all country data             |
+| `findCountry(code)` | Find country by calling code         |
+| `detectCountry(number)` | Auto-detect country from prefix  |
+| `validate(number, country)` | Validate phone against rules |
+| `format(number)`    | Format phone number display          |
 
 **Supported:** 40+ countries across all major regions.
 
@@ -342,42 +237,24 @@ Phone validation is handled via JavaScript — no external dependencies required
 
 ## Companion Routing Plugin
 
-This plugin requires a companion plugin that manages the `wp_admin_management` database table for page-to-route mapping.
+This plugin depends on a companion plugin that manages the `wp_admin_management` database table for page-to-route mapping.
 
-### What is `wp_admin_management`?
+### What it does
 
-A custom WordPress table that stores routing configurations. This plugin reads from it to determine which pages handle:
-- Listing archive
-- Property detail pages
-- Logout URL
+The `wp_admin_management` table stores which WordPress pages handle:
+- The listing archive page
+- Individual property detail pages
+- Logout URL routing
 
-### Setup
+### Without the companion plugin
 
-1. Install the companion Admin Management plugin on the same WordPress site
-2. Add route records through its admin interface
+- Search bar and "See all" cards will not redirect correctly.
+- Property detail pages will return `error_not_found`.
+- Secure property URLs will fail to generate.
 
-### Required Route Records
+### How routing works
 
-| Name                  | Points To                                  |
-|-----------------------|--------------------------------------------|
-| `Listing Archive`     | Page with `[listing_engine_view]`          |
-| `Listing Single View` | Page with `[single_property_view]`         |
-| `Logout` / `logout`   | Optional custom logout route               |
-
-### Without Routing
-
-- Missing `Listing Archive` → Search bar and "See all" cards fail to redirect
-- Missing `Listing Single View` → Detail pages return `error_not_found`
-- Missing `Logout` → Falls back to `wp_logout_url()`
-
-### How Routing Works
-
-`includes/url-router.php` queries `wp_admin_management` to:
-1. Find the page ID for `Listing Single View`
-2. Generate the page permalink
-3. Append the obfuscated `property_ref` parameter (Base64-encoded listing ID)
-
-The search bar and curated list sections use the same table to find the archive page URL for redirects.
+The plugin queries `wp_admin_management` to find the correct page IDs, then generates permalinks with obfuscated `property_ref` parameters (Base64-encoded listing IDs) for secure detail page access.
 
 ---
 
@@ -395,6 +272,8 @@ Created/repaired via **LEF > Database**:
 
 ### Tables Required from Companion System
 
+This plugin depends on an existing listing-management system for:
+
 | Table                     | Purpose               |
 |---------------------------|-----------------------|
 | `wp_ls_property`          | Property records      |
@@ -405,32 +284,7 @@ Created/repaired via **LEF > Database**:
 | `wp_ls_block_date`        | Blocked dates         |
 | `wp_authme_otp_storage`   | OTP storage           |
 
-**Note:** This plugin is not fully standalone. Missing companion tables will break listing data, OTP, and profile features.
-
----
-
-## Deployment Guide
-
-### Version Strategy
-
-| Version              | Purpose                                       |
-|----------------------|-----------------------------------------------|
-| `production-version` | Development and customization (readable source) |
-| `minify-version`     | Distribution-ready for deployment             |
-
-### Deployment Steps
-
-1. Make changes in `production-version/`
-2. Sync to `minify-version/`: `cp -r production-version/* minify-version/`
-3. Create a ZIP of `minify-version/`
-4. Rename to `LEF-VR.zip` (recommended for zero conflict, or use any custom name)
-5. Upload via WP Admin > Plugins > Add New > Upload Plugin
-
-**Always keep `minify-version/` clean and deployment-ready.**
-
-### Companion Plugin Requirement
-
-Ensure the companion Admin Management plugin is installed on the target WordPress site before deploying.
+**Note:** If companion tables are missing, listing data, OTP, and profile features will not work.
 
 ---
 
@@ -438,34 +292,34 @@ Ensure the companion Admin Management plugin is installed on the target WordPres
 
 ### Property detail page redirects away
 
-- Confirm companion plugin is installed and active
-- Verify `Listing Single View` mapping exists in `wp_admin_management`
-- Check `property_ref` URL parameter is present and valid
-- Confirm property ID exists in `wp_ls_property`
+- Confirm companion Admin Management plugin is installed and active.
+- Verify `Listing Single View` mapping exists in `wp_admin_management`.
+- Check the `property_ref` URL parameter is present and valid.
+- Confirm the property ID exists in `wp_ls_property`.
 
 ### Search bar does not redirect correctly
 
-- Confirm companion plugin is installed and active
-- Verify `Listing Archive` mapping exists in `wp_admin_management`
-- Confirm archive page contains `[listing_engine_view]`
+- Confirm companion plugin is installed and active.
+- Verify `Listing Archive` mapping exists in `wp_admin_management`.
+- Confirm the archive page contains `[listing_engine_view]`.
 
-### Country dropdown is empty
+### Country dropdown is empty on profile page
 
-- Verify `global-assets/js/phone-core.js` is loaded (check `includes/assets-loader.php`)
-- Open browser console and confirm `window.PhoneCore` is defined
-- Check for JavaScript errors on the profile page
+- Verify `components/global/phone-core.js` is being loaded.
+- Open browser console and check `window.PhoneCore` is defined.
+- Look for JavaScript errors on the profile page.
 
 ### OTP email not received
 
-- Configure WordPress mail (`wp_mail()`)
-- Confirm `wp_authme_otp_storage` table exists
-- Check server email delivery settings
+- Configure WordPress mail (`wp_mail()`) — test with an SMTP plugin if needed.
+- Confirm `wp_authme_otp_storage` table exists.
+- Check server email delivery settings.
 
 ### Wishlist / reviews / bookings fail
 
-- Create LEF tables from **LEF > Database**
-- Verify companion listing tables exist
-- Check AJAX nonce and login state
+- Create LEF tables from **LEF > Database**.
+- Verify companion listing tables exist.
+- Check AJAX nonce and ensure the user is logged in.
 
 ---
 
