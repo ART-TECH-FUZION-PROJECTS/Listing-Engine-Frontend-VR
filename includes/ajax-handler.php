@@ -2404,3 +2404,203 @@ function lef_send_centralized_email() {
 }
 add_action( 'wp_ajax_lef_send_centralized_email', 'lef_send_centralized_email' );
 
+
+/* ==================== REVIEW MANAGEMENT (BACKEND) ==================== */
+
+/**
+ * AJAX: Fetch reviews for admin management.
+ */
+function lef_manag_revi_fetch_data() {
+	check_ajax_referer( 'lef_review_nonce', 'nonce' );
+
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_send_json_error( array( 'message' => 'Unauthorized access.' ) );
+	}
+
+	global $wpdb;
+	$table = $wpdb->prefix . 'ls_reviews';
+
+	$status = isset( $_POST['status'] ) ? sanitize_text_field( $_POST['status'] ) : 'pending';
+	$search = isset( $_POST['search'] ) ? sanitize_text_field( $_POST['search'] ) : '';
+	$page   = isset( $_POST['page'] ) ? max( 1, intval( $_POST['page'] ) ) : 1;
+	$limit  = 10;
+	$offset = ( $page - 1 ) * $limit;
+
+	// Database mapping: if status parameter is 'approved', query for 'approve' in DB
+	$query_status = ( $status === 'approved' || $status === 'approve' ) ? 'approve' : $status;
+
+	// Build WHERE clause
+	$where = "WHERE r.status = %s";
+	$params = array( $query_status );
+
+	if ( ! empty( $search ) ) {
+		$where .= " AND (p.title LIKE %s OR r.review LIKE %s OR u.display_name LIKE %s)";
+		$like = '%' . $wpdb->esc_like( $search ) . '%';
+		$params[] = $like;
+		$params[] = $like;
+		$params[] = $like;
+	}
+
+	// Fetch Matching Items
+	$query = $wpdb->prepare(
+		"SELECT r.*, p.title as property_title, u.display_name as user_name, u.user_email as user_email
+		 FROM {$table} r
+		 LEFT JOIN {$wpdb->prefix}ls_property p ON r.property_id = p.id
+		 LEFT JOIN {$wpdb->users} u ON r.user_id = u.ID
+		 $where
+		 ORDER BY r.created_at DESC
+		 LIMIT %d OFFSET %d",
+		array_merge( $params, array( $limit, $offset ) )
+	);
+	$items = $wpdb->get_results( $query, ARRAY_A );
+
+	// Fetch Total matching count
+	$count_query = $wpdb->prepare(
+		"SELECT COUNT(*)
+		 FROM {$table} r
+		 LEFT JOIN {$wpdb->prefix}ls_property p ON r.property_id = p.id
+		 LEFT JOIN {$wpdb->users} u ON r.user_id = u.ID
+		 $where",
+		$params
+	);
+	$total_matching = (int) $wpdb->get_var( $count_query );
+
+	// Fetch counts for tabs (matching DB 'approve' instead of 'approved')
+	$counts = array(
+		'pending'  => (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table} WHERE status = 'pending'" ),
+		'approved' => (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table} WHERE status = 'approve'" ),
+		'rejected' => (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table} WHERE status = 'rejected'" ),
+	);
+	$total_db = array_sum( $counts );
+
+	wp_send_json_success( array(
+		'items'          => $items,
+		'counts'         => $counts,
+		'total_db'       => $total_db,
+		'total_matching' => $total_matching,
+		'per_page'       => $limit,
+		'current_page'   => $page,
+	) );
+}
+add_action( 'wp_ajax_lef_manag_revi_fetch_data', 'lef_manag_revi_fetch_data' );
+
+/**
+ * AJAX: Update single review status.
+ */
+function lef_manag_revi_update_status() {
+	check_ajax_referer( 'lef_review_nonce', 'nonce' );
+
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_send_json_error( array( 'message' => 'Unauthorized access.' ) );
+	}
+
+	$id     = isset( $_POST['id'] ) ? intval( $_POST['id'] ) : 0;
+	$status = isset( $_POST['status'] ) ? sanitize_text_field( $_POST['status'] ) : '';
+
+	// Support incoming approved mapped to approve in DB
+	if ( $status === 'approved' ) {
+		$status = 'approve';
+	}
+
+	if ( ! $id || ! in_array( $status, array( 'pending', 'approve', 'rejected' ) ) ) {
+		wp_send_json_error( array( 'message' => 'Invalid data provided.' ) );
+	}
+
+	global $wpdb;
+	$table = $wpdb->prefix . 'ls_reviews';
+
+	$updated = $wpdb->update(
+		$table,
+		array(
+			'status'     => $status,
+			'updated_at' => current_time( 'mysql' ),
+		),
+		array( 'id' => $id ),
+		array( '%s', '%s' ),
+		array( '%d' )
+	);
+
+	if ( $updated !== false ) {
+		wp_send_json_success( array( 'message' => 'Review status updated successfully.' ) );
+	} else {
+		wp_send_json_error( array( 'message' => 'Failed to update review status.' ) );
+	}
+}
+add_action( 'wp_ajax_lef_manag_revi_update_status', 'lef_manag_revi_update_status' );
+
+/**
+ * AJAX: Bulk update review status.
+ */
+function lef_manag_revi_bulk_status_change() {
+	check_ajax_referer( 'lef_review_nonce', 'nonce' );
+
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_send_json_error( array( 'message' => 'Unauthorized access.' ) );
+	}
+
+	$ids    = isset( $_POST['ids'] ) && is_array( $_POST['ids'] ) ? array_map( 'intval', $_POST['ids'] ) : array();
+	$status = isset( $_POST['status'] ) ? sanitize_text_field( $_POST['status'] ) : '';
+
+	// Support incoming approved mapped to approve in DB
+	if ( $status === 'approved' ) {
+		$status = 'approve';
+	}
+
+	if ( empty( $ids ) || ! in_array( $status, array( 'pending', 'approve', 'rejected' ) ) ) {
+		wp_send_json_error( array( 'message' => 'Invalid input.' ) );
+	}
+
+	global $wpdb;
+	$table = $wpdb->prefix . 'ls_reviews';
+
+	$ids_placeholder = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+	$updated = $wpdb->query( $wpdb->prepare(
+		"UPDATE {$table} SET status = %s, updated_at = %s WHERE id IN ($ids_placeholder)",
+		array_merge( array( $status, current_time( 'mysql' ) ), $ids )
+	) );
+
+	if ( $updated !== false ) {
+		wp_send_json_success( array( 'message' => 'Bulk status updated successfully.' ) );
+	} else {
+		wp_send_json_error( array( 'message' => 'Failed to update status.' ) );
+	}
+}
+add_action( 'wp_ajax_lef_manag_revi_bulk_status_change', 'lef_manag_revi_bulk_status_change' );
+
+/**
+ * AJAX: Bulk delete reviews.
+ */
+function lef_manag_revi_delete_reviews() {
+	check_ajax_referer( 'lef_review_nonce', 'nonce' );
+
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_send_json_error( array( 'message' => 'Unauthorized access.' ) );
+	}
+
+	$mode = isset( $_POST['mode'] ) ? sanitize_text_field( $_POST['mode'] ) : '';
+	$ids  = isset( $_POST['ids'] ) && is_array( $_POST['ids'] ) ? array_map( 'intval', $_POST['ids'] ) : array();
+
+	global $wpdb;
+	$table = $wpdb->prefix . 'ls_reviews';
+
+	if ( $mode === 'all_rejected' ) {
+		$deleted = $wpdb->delete( $table, array( 'status' => 'rejected' ) );
+	} elseif ( $mode === 'selected' && ! empty( $ids ) ) {
+		$ids_placeholder = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+		$deleted = $wpdb->query( $wpdb->prepare(
+			"DELETE FROM {$table} WHERE id IN ($ids_placeholder)",
+			$ids
+		) );
+	} else {
+		wp_send_json_error( array( 'message' => 'No reviews selected.' ) );
+		return;
+	}
+
+	if ( $deleted !== false ) {
+		wp_send_json_success( array( 'message' => 'Reviews deleted successfully.' ) );
+	} else {
+		wp_send_json_error( array( 'message' => 'Failed to delete reviews.' ) );
+	}
+}
+add_action( 'wp_ajax_lef_manag_revi_delete_reviews', 'lef_manag_revi_delete_reviews' );
+

@@ -701,9 +701,10 @@ span.lefdk-lf-price-unit {
 
 .lefdk-rc-avatar {
     width: 45px;
-    height: auto !important;
+    height: 45px !important;
     border-radius: 100rem !important;
     object-fit: cover;
+    object-position: top center;
 }
 
 .lefdk-rc-info {
@@ -833,8 +834,10 @@ span.lefdk-lf-price-unit {
     gap: 1.2rem;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE/Edge */
+    scrollbar-width: none;
+    /* Firefox */
+    -ms-overflow-style: none;
+    /* IE/Edge */
     padding: 0.5rem 0;
     width: 100%;
     -webkit-overflow-scrolling: touch;

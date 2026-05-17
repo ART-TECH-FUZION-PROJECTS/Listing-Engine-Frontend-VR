@@ -427,6 +427,44 @@ function lef_admin_enqueue_assets( $hook ) {
 		) );
 	}
 
+	// Enqueue Manage Reviews screen assets
+	if ( isset( $_GET['page'] ) && $_GET['page'] === 'lef-manage-reviews' ) {
+		wp_enqueue_style(
+			'lef-manage-reviews-css',
+			LEF_PLUGIN_URL . 'backend/assets/css/manage-review-models/manage-review.css',
+			array( 'lef-global-styles' ),
+			filemtime( LEF_PLUGIN_DIR . 'backend/assets/css/manage-review-models/manage-review.css' )
+		);
+
+		wp_enqueue_script(
+			'lef-manage-reviews-js',
+			LEF_PLUGIN_URL . 'backend/assets/js/manage-review-models/manage-review.js',
+			array( 'jquery' ),
+			filemtime( LEF_PLUGIN_DIR . 'backend/assets/js/manage-review-models/manage-review.js' ),
+			true
+		);
+
+		wp_enqueue_style(
+			'lef-manage-reviews-view-edit-css',
+			LEF_PLUGIN_URL . 'backend/assets/css/manage-review-models/view-edit.css',
+			array( 'lef-manage-reviews-css' ),
+			filemtime( LEF_PLUGIN_DIR . 'backend/assets/css/manage-review-models/view-edit.css' )
+		);
+
+		wp_enqueue_script(
+			'lef-manage-reviews-view-edit-js',
+			LEF_PLUGIN_URL . 'backend/assets/js/manage-review-models/view-edit.js',
+			array( 'lef-manage-reviews-js' ),
+			filemtime( LEF_PLUGIN_DIR . 'backend/assets/js/manage-review-models/view-edit.js' ),
+			true
+		);
+
+		wp_localize_script( 'lef-manage-reviews-js', 'lefReviewData', array(
+			'ajax_url' => admin_url( 'admin-ajax.php' ),
+			'nonce'    => wp_create_nonce( 'lef_review_nonce' )
+		) );
+	}
+
 	// Localize admin ajax URL if not exist
 	wp_localize_script( 'lef_database-js', 'lef_admin_obj', array(
 		'ajax_url' => admin_url( 'admin-ajax.php' )

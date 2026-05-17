@@ -59,6 +59,16 @@ function lef_register_admin_menus() {
 		'lef-manage-reservations',
 		'lef_render_manage_reservations_page'
 	);
+
+	// Add submenu "Manage Reviews" under "LEF"
+	add_submenu_page(
+		'lef-main-menu',
+		'Manage Reviews',
+		'Manage Reviews',
+		'manage_options',
+		'lef-manage-reviews',
+		'lef_render_manage_reviews_page'
+	);
 	
 	// Remove the duplicate "LEF" submenu that WordPress auto-creates
 	remove_submenu_page( 'lef-main-menu', 'lef-main-menu' );
@@ -82,6 +92,31 @@ add_action( 'admin_menu', 'lef_register_admin_menus' );
  * @global array $menu     WordPress global admin menu array.
  * @global array $submenu  WordPress global admin submenu array.
  * @return void
+/**
+ * Get total pending count of both reservations and reviews.
+ *
+ * @return int Total pending count.
+ */
+function lef_get_total_pending_backend_count() {
+	global $wpdb;
+	$res_table = $wpdb->prefix . 'ls_reservation';
+	$rev_table = $wpdb->prefix . 'ls_reviews';
+
+	$res_count = 0;
+	if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $res_table ) ) === $res_table ) {
+		$res_count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM `{$res_table}` WHERE `status` = 'pending'" );
+	}
+
+	$rev_count = 0;
+	if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $rev_table ) ) === $rev_table ) {
+		$rev_count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM `{$rev_table}` WHERE `status` = 'pending'" );
+	}
+
+	return $res_count + $rev_count;
+}
+
+/**
+ * Inject pending reservations count bubble on the admin menu.
  */
 function lef_inject_pending_reservation_bubble() {
 	global $menu, $submenu, $wpdb;
@@ -90,7 +125,6 @@ function lef_inject_pending_reservation_bubble() {
 	$table = $wpdb->prefix . 'ls_reservation';
 
 	// Guard: skip gracefully if the table does not exist yet
-	// (e.g. before the plugin's DB installer has run).
 	if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ) !== $table ) {
 		return;
 	}
@@ -99,42 +133,38 @@ function lef_inject_pending_reservation_bubble() {
 		"SELECT COUNT(*) FROM `{$table}` WHERE `status` = 'pending'"
 	);
 
-	// Nothing pending — no bubble needed.
-	if ( $pending_count <= 0 ) {
-		return;
+	// ── 2. Update submenu: "Manage Reservations" ─────────────────
+	if ( $pending_count > 0 ) {
+		$bubble = sprintf(
+			' <span class="awaiting-mod count-%1$d"><span class="pending-count">%1$d</span></span>',
+			$pending_count
+		);
+		if ( isset( $submenu['lef-main-menu'] ) ) {
+			foreach ( $submenu['lef-main-menu'] as &$item ) {
+				if ( isset( $item[2] ) && $item[2] === 'lef-manage-reservations' ) {
+					$item[0] = 'Manage Reserv' . $bubble;
+					break;
+				}
+			}
+			unset( $item );
+		}
 	}
 
-	// ── 2. Build the WP-native count bubble HTML ─────────────────
-	// WordPress uses this exact markup for Comments, WooCommerce, etc.
-	// The CSS is already provided by wp-admin out of the box.
-	$bubble = sprintf(
-		' <span class="awaiting-mod count-%1$d"><span class="pending-count">%1$d</span></span>',
-		$pending_count
-	);
-
-	// ── 3. Update submenu: "Manage Reservations" ─────────────────
-	// $submenu[ parent_slug ] is an array of submenu entries.
-	// Each entry: [ 0 => title, 1 => capability, 2 => slug, 3 => page_title ]
-	if ( isset( $submenu['lef-main-menu'] ) ) {
-		foreach ( $submenu['lef-main-menu'] as &$item ) {
-			if ( isset( $item[2] ) && $item[2] === 'lef-manage-reservations' ) {
-				$item[0] = 'Manage Reserv' . $bubble;
+	// ── 3. Update main menu: Combined total pending count ────────
+	$total_pending = lef_get_total_pending_backend_count();
+	if ( $total_pending > 0 ) {
+		$total_bubble = sprintf(
+			' <span class="awaiting-mod count-%1$d"><span class="pending-count">%1$d</span></span>',
+			$total_pending
+		);
+		foreach ( $menu as &$main_item ) {
+			if ( isset( $main_item[2] ) && $main_item[2] === 'lef-main-menu' ) {
+				$main_item[0] = 'LEF' . $total_bubble;
 				break;
 			}
 		}
-		unset( $item ); // Break the reference after the loop.
+		unset( $main_item );
 	}
-
-	// ── 4. Update main menu: "LEF" top-level item ────────────────
-	// $menu is a numerically indexed array.
-	// Each entry: [ 0 => title, 1 => capability, 2 => slug, ... ]
-	foreach ( $menu as &$main_item ) {
-		if ( isset( $main_item[2] ) && $main_item[2] === 'lef-main-menu' ) {
-			$main_item[0] = 'LEF' . $bubble;
-			break;
-		}
-	}
-	unset( $main_item ); // Break the reference.
 }
 add_action( 'admin_menu', 'lef_inject_pending_reservation_bubble', 999 );
 
@@ -237,4 +267,101 @@ function lef_render_manage_reservations_page() {
 		echo '<div class="wrap"><div class="error"><p>Template not found.</p></div></div>';
 	}
 }
+
+
+/**
+ * Callback for Manage Reviews Submenu Page
+ */
+function lef_render_manage_reviews_page() {
+	global $wpdb;
+
+	$action = isset( $_GET['action'] ) ? sanitize_text_field( $_GET['action'] ) : '';
+	$id     = isset( $_GET['id'] ) ? intval( $_GET['id'] ) : 0;
+
+	if ( $action === 'view' && $id ) {
+		// Fetch Review Data
+		$review = $wpdb->get_row( $wpdb->prepare(
+			"SELECT r.*, p.title as property_title
+			 FROM {$wpdb->prefix}ls_reviews r
+			 LEFT JOIN {$wpdb->prefix}ls_property p ON r.property_id = p.id
+			 WHERE r.id = %d",
+			$id
+		), ARRAY_A );
+
+		if ( $review ) {
+			// User Info
+			$u_user      = get_userdata( $review['user_id'] );
+			$u_full_name = get_user_meta( $review['user_id'], 'full_name', true );
+
+			$review['user'] = array(
+				'name'  => ! empty( $u_full_name ) ? $u_full_name : ( $u_user ? $u_user->user_login : 'Unknown' ),
+				'email' => $u_user ? $u_user->user_email : 'N/A'
+			);
+
+			$template_path = LEF_PLUGIN_DIR . 'backend/template/manage-review-models/view-edit.php';
+		} else {
+			$template_path = LEF_PLUGIN_DIR . 'backend/template/manage-review-models/manage-review.php';
+		}
+	} else {
+		$template_path = LEF_PLUGIN_DIR . 'backend/template/manage-review-models/manage-review.php';
+	}
+
+	if ( file_exists( $template_path ) ) {
+		include $template_path;
+	} else {
+		echo '<div class="wrap"><div class="error"><p>Template not found.</p></div></div>';
+	}
+}
+
+/**
+ * Inject pending reviews count bubble on the admin menu.
+ */
+function lef_inject_pending_review_bubble() {
+	global $menu, $submenu, $wpdb;
+
+	$table = $wpdb->prefix . 'ls_reviews';
+
+	// Guard: skip gracefully if the table does not exist yet
+	if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ) !== $table ) {
+		return;
+	}
+
+	$pending_count = (int) $wpdb->get_var(
+		"SELECT COUNT(*) FROM `{$table}` WHERE `status` = 'pending'"
+	);
+
+	// ── 1. Update submenu: "Manage Reviews" ─────────────────────
+	if ( $pending_count > 0 ) {
+		$bubble = sprintf(
+			' <span class="awaiting-mod count-%1$d"><span class="pending-count">%1$d</span></span>',
+			$pending_count
+		);
+		if ( isset( $submenu['lef-main-menu'] ) ) {
+			foreach ( $submenu['lef-main-menu'] as &$item ) {
+				if ( isset( $item[2] ) && $item[2] === 'lef-manage-reviews' ) {
+					$item[0] = 'Manage Reviews' . $bubble;
+					break;
+				}
+			}
+			unset( $item );
+		}
+	}
+
+	// ── 2. Update main menu: Combined total pending count ────────
+	$total_pending = lef_get_total_pending_backend_count();
+	if ( $total_pending > 0 ) {
+		$total_bubble = sprintf(
+			' <span class="awaiting-mod count-%1$d"><span class="pending-count">%1$d</span></span>',
+			$total_pending
+		);
+		foreach ( $menu as &$main_item ) {
+			if ( isset( $main_item[2] ) && $main_item[2] === 'lef-main-menu' ) {
+				$main_item[0] = 'LEF' . $total_bubble;
+				break;
+			}
+		}
+		unset( $main_item );
+	}
+}
+add_action( 'admin_menu', 'lef_inject_pending_review_bubble', 1000 );
 
